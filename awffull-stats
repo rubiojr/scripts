@@ -1,0 +1,99 @@
+#!/usr/bin/ruby
+#
+# Sergio Rubio <sergio@rubio.name>
+# Tue Dec 16 16:18:32 CET 2008
+#
+# Script to split apache log files and feed them to awffull
+# to generate statistics
+#
+# Log file format:
+#
+# LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\" [%V]" combinedv
+#
+
+require 'zlib'
+require 'tmpdir'
+require 'fileutils'
+
+AWFFULL='/usr/bin/awffull'
+AWFCONF = '/etc/awffull/awffull.conf'
+STATS_DIR = '/tmp/stats'
+TMPDIR = "/tmp/awffull_#{Time.now.to_i}"
+
+yesterday = Time.now - 86400
+vhost_logs = {}
+parsed_lines = 0
+errors = 0
+ts = Time.now
+
+if not File.directory? STATS_DIR
+  $stderr.puts "ERROR: Output directory for stats not found, aborting."
+  exit 1
+end
+  
+if not File.exist? AWFCONF
+  $stderr.puts "WARNING: Awffull config not found."
+end
+
+if not File.exist? AWFFULL
+  $stderr.puts "ERROR: Awffull binary not found, aborting."
+  exit 1
+end
+
+Dir.mkdir TMPDIR
+
+begin
+  $stdin.each_line do |l|
+    parsed_lines += 1
+    begin
+      vhost = l.chomp.split(/\s/)[-1].match(/\[.*\]$/).to_s || nil
+      vs = vhost.gsub(/www\d?\.|\[|\]/,'')
+      vhost_logs[vs] = [] if vhost_logs[vs].nil?
+      vhost_logs[vs] << l
+    rescue Exception => e
+      errors += 1
+      $stderr.puts "Error parsing logline, skipping (#{e.message})."
+      $stderr.puts l
+    end
+  end
+rescue Exception => e
+  $stderr.puts "Error parsing logfile."
+  $stderr.puts e.backtrace
+  exit 1
+end
+tt = Time.now - ts
+
+begin
+  vhost_logs.each do |k,v|
+    Dir.mkdir File.join(TMPDIR, k)
+    sd = File.join(STATS_DIR, k)
+    Dir.mkdir(sd) if not File.directory?(sd)
+    lf = "#{File.join(TMPDIR, k)}/log"
+    File.open(lf, 'w') do |f|
+      v.each { |l| f.puts l }
+    end
+    `#{AWFFULL} -c #{AWFCONF} -n '#{k}' -o #{STATS_DIR}/#{k} #{lf}`
+  end
+rescue Exception => e
+  $stderr.puts 'Error generating stats with awffull: ' + e.message
+  $stderr.puts e.backtrace
+end
+  
+FileUtils.rm_rf TMPDIR if File.directory? TMPDIR
+
+
+puts "Awffull Log Statistics #{Time.now.strftime('%Y-%m-%d')}"
+puts "------------------------------------------"
+puts "Virtual Hosts found: ".ljust(30) + "#{vhost_logs.keys.size}"
+puts "Parsed lines: ".ljust(30) + "#{parsed_lines}"
+puts "Errors: ".ljust(30) + "#{errors}"
+puts "Time taken: ".ljust(30) + "#{tt}"
+puts "Top 5 Virtual Hosts:"
+count = 0
+
+# Top 5 vhost
+vhost_logs.sort { |a, b| a[1].size <=> b[1].size }.reverse[0..4].each do |a|
+  count += 1
+  puts "  #{count}: #{a[0]}".ljust(30) + "(#{a[1].size} hits)"
+end
+
