@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+RED = "\e[31;1m"
+YELLOW = "\e[33;1m"
+RESET = "\e[0m"
+
+class String
+	def red
+		RED + self + RESET
+	end
+	def yellow
+		YELLOW + self + RESET
+	end
+end
+
+map = {}
+if PLATFORM =~ /darwin/
+  cmd = 'ps aux -m'
+else
+  cmd = "ps aux k-rss"
+end
+
+`#{cmd}`.each_line do |l|
+	tokens = l.split
+	rss, pname = tokens[5].to_i, tokens[10]
+	if map[pname].nil?
+		map[pname] = {}
+		map[pname][:rss] = 0
+	end
+	map[pname][:rss] += rss
+end
+output = []
+map.sort { |k1, k2| k1[1][:rss] <=> k2[1][:rss] }.each do |k, v|
+  pname = k
+  if k.size >= 40
+    pname = '(...) ' + k.split('/')[-1]
+  end
+	output << "#{pname.yellow.ljust(60)} #{v[:rss].to_s}"
+end
+
+puts "#{'process name'.red.ljust(60)} #{'RSS (KBytes)'.red}"
+output[-10..-1].each do |l|
+	puts l
+end
+
