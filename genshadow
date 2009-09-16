@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+
+#
+# Generate a valid hash for /etc/shadow
+#
+
+begin
+  require 'rubygems'
+  require 'highline/import'
+rescue LoadError
+  $stderr.puts "You need rubygems and highline gem installed"
+  exit 1
+end
+
+if not PLATFORM =~ /linux/
+  puts "Not a linux host. aborting"
+  exit 1
+end
+
+# Code from 
+# http://www.opensourcery.co.za/2009/05/01/quick-nix-shadow-passwords-with-ruby/
+#
+module Linux
+  class User
+    class << self
+      # Generate an MD5 salt string
+      def salt
+        seeds = ('a'..'z').to_a
+        seeds.concat( ('A'..'Z').to_a )
+        seeds.concat( (0..9).to_a )
+        seeds.concat ['/', '.']
+        seeds.compact!
+ 
+        salt_string = '$1$'
+        8.times { salt_string << seeds[ rand(seeds.size) ].to_s }
+ 
+        salt_string
+      end
+ 
+      # Crypt a password suitable for use in shadow files
+      def crypt( string )
+        string.crypt( self.salt )
+      end
+    end
+  end
+end
+
+p = ask('password: ') { |q| q.echo }
+puts Linux::User.crypt(p)
