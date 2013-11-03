@@ -13,7 +13,7 @@ class String
 end
 
 map = {}
-if PLATFORM =~ /darwin/
+if RUBY_PLATFORM =~ /darwin/
   cmd = 'ps aux -m'
 else
   cmd = "ps aux k-rss"
