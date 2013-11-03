@@ -2,6 +2,10 @@ require 'sinatra'
 require 'json'
 
 set :port => (ARGV[0] || 1234)
+set :remote_host => (ARGV[1] || 'localhost')
+
+puts "LOG: remote host #{settings.remote_host}"
+puts "LOG: service port #{settings.port}"
 
 #
 # curl -H "Content-Type: application/json" \
@@ -11,6 +15,6 @@ set :port => (ARGV[0] || 1234)
 post '/' do
   magnet = (JSON.parse request.body.read(1024))['magnet'] rescue nil
   if magnet and magnet =~ /^magnet:/
-    `transmission-remote -a '#{magnet}'`
+    `transmission-remote #{settings.remote_host} -a '#{magnet}'`
   end
 end
