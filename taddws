@@ -1,0 +1,16 @@
+require 'sinatra'
+require 'json'
+
+set :port => (ARGV[0] || 1234)
+
+#
+# curl -H "Content-Type: application/json" \
+#      -d '{"magnet" : "magnet-link-here"}' \
+#      localhost:4567
+#
+post '/' do
+  magnet = (JSON.parse request.body.read(1024))['magnet'] rescue nil
+  if magnet and magnet =~ /^magnet:/
+    `transmission-remote -a '#{magnet}'`
+  end
+end
