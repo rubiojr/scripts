@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# Create a sshproxy account in the jump host
+#
+#   useradd sshproxy
+#
+# Use with ssh config:
+#
+#   Host test
+#     hostname 1.2.3.4
+#     user <target-host-user>
+#     ProxyCommand ssh sshproxy@proxyhost /usr/local/bin/sshproxy %h %p
+#     IdentityFile ~/.ssh/mykey
+#
+# Add public key to /home/sshproxy/.ssh/authorized_keys with a command
+# stance:
+#     command="/usr/local/bin/sshproxy 1.2.3.4 22",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ssh-rsa KEY...
+#
+# Where 1.2.3.4 is the target host
+#
+
+echo $@ >> /tmp/sshproxy.log
+host="$1"
+port="$2"
+
+netcat -w 120 "$host" "$port"
