@@ -1,11 +1,35 @@
 #!/bin/bash
 set -e
 LUSER=$1
+IP=$2
 ROOTFS="/var/lib/lxc/user-$LUSER/rootfs"
-SSHKEY=$2
+SSHKEY=$3
+
+usage() {
+  echo "Usage: $0 <username> <IP> [ssh_key]"
+}
+
+prepare_key() {
+  ip=$1
+  tmp_ssh_key=`mktemp`
+  if [[ $SSHKEY =~ ^http ]]; then
+    curl --silent $SSHKEY > $tmp_ssh_key
+  else
+    if [ -f "$SSHKEY" ]; then
+      cp $SSHKEY $tmp_ssh_key
+    else
+      echo Invalid SSH key file
+    fi
+  fi
+}
 
 [ -z "$LUSER" ] && {
-  echo "Usage: $0 <username> [ssh_key]"
+  usage
+  exit 1
+}
+
+[ -z "$IP" ] && {
+  usage
   exit 1
 }
 
@@ -28,16 +52,14 @@ chroot $ROOTFS userdel -f ubuntu
 [ -z "$SSHKEY" ] || {
   mkdir -p $ROOTFS/home/$LUSER/.ssh
 
-  if [[ $SSHKEY =~ ^http ]]; then
-    curl --silent $SSHKEY > $ROOTFS/home/$LUSER/.ssh/authorized_keys
-  else
-    if [ -f "$SSHKEY" ]; then
-      cat $SSHKEY > $ROOTFS/home/$LUSER/.ssh/authorized_keys
-    else
-      echo Invalid SSH key file
-      exit 1
-    fi
-  fi
+  prepare_key $IP
+
+  cp $tmp_ssh_key $ROOTFS/home/$LUSER/.ssh/authorized_keys
+  echo -n "command="/usr/local/bin/sshproxy $IP 22",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty " >> /home/sshproxy/.ssh/authorized_keys
+  cat $tmp_ssh_key >> /home/sshproxy/.ssh/authorized_keys
+
   chroot $ROOTFS chown $LUSER:$LUSER /home/$LUSER -R
   chmod 700 $ROOTFS/home/$LUSER/.ssh
 }
+
+echo "lxc.network.ipv4 = $IP/24" >> $ROOTFS/../config
