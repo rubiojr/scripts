@@ -60,4 +60,6 @@ EOF
 service tor restart
 
 # Use this for https://weather.torproject.org/subscribe/
+# Takes at least an hour to be able to use the service since the relay
+# was started.
 echo "Node fingerprint: $(cat /var/lib/tor/fingerprint)"
