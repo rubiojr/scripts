@@ -10,7 +10,7 @@ agent = Mechanize.new
 agent.user_agent_alias = 'Mac Safari'
 agent.pluggable_parser.default = Mechanize::Download
 
-def save_file(url, path, title)
+def save_file(url, path, title, conference)
   puts "Saving file #{path}"
 
   dir = File.dirname(path)
@@ -23,7 +23,10 @@ def save_file(url, path, title)
   # save the URL from where the file was downloaded
   unless File.exist?(nfo_file)
     File.open(nfo_file, 'w') do |f|
-      f.puts "<movie>\n<title>\n#{title}\n</title>\n</movie>"
+      f.puts "<movie>"
+      f.puts "  <title>\n#{title}\n</title>"
+      f.puts "  <set>\n#{conference}\n</set>"
+      f.puts "</movie>"
       f.puts url
     end
   end
@@ -45,7 +48,7 @@ def fetch_video(agent, url)
       url = l.uri.to_s
       next unless url =~ /(avi|mp4|ogg|mp3|mov)$/
 
-      save_file url, "#{conference}/#{video_name}#{File.extname(url)}", page.title
+      save_file url, "#{conference}/#{video_name}#{File.extname(url)}", page.title, conference
     end
   end
 end
