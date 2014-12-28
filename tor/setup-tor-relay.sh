@@ -48,14 +48,10 @@ AccountingStart month 1 01:00
 ## You might also include your PGP or GPG fingerprint if you have one:
 #ContactInfo 0xFFFFFFFF Random Person <nobody AT example dot com>
 
-DirPort 9030 # what port to advertise for directory connections
-## Uncomment this if you run more than one Tor relay, and add the identity
-## key fingerprint of each Tor relay you control, even if they're on
-## different networks. You declare it here so Tor clients can avoid
-## using more than one of your relays in a single circuit. See
-## https://www.torproject.org/docs/faq#MultipleRelays
-## However, you should never include a bridge's fingerprint here, as it would
-## break its concealability and potentionally reveal its IP/TCP address.
+# Doesn't work when AccountingMax is enabled
+# DirPort 9030 # what port to advertise for directory connections
+
+# Get fingerprint from /var/lib/tor/fingerprint
 #MyFamily keyid,keyid,...
 
 ExitPolicy reject *:* # no exits allowed
