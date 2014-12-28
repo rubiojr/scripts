@@ -4,9 +4,6 @@
 #
 
 require 'mechanize'
-require 'uri'
-require 'net/http'
-require 'progressbar'
 
 url = "https://www.usenix.org/conferences/multimedia"
 agent = Mechanize.new
