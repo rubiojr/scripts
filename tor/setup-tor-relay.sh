@@ -59,4 +59,5 @@ EOF
 
 service tor restart
 
-echo OK
+# Use this for https://weather.torproject.org/subscribe/
+echo "Node fingerprint: $(cat /var/lib/tor/fingerprint)"
