@@ -1,4 +1,9 @@
 #!/bin/bash
+# Fire and forget tor relay setup
+#
+# Alternatives out there:
+# * https://github.com/micahflee/tor-relay-bootstrap/blob/master/bootstrap.sh
+#
 set -e
 
 if [ `whoami` != 'root' ]; then
@@ -18,6 +23,12 @@ EOF
 apt-get update
 apt-get install -y unattended-upgrades ntp
 
+# Optional firewall setup, doesn't work in some VPS servers
+# apt-get install -y ufw
+# ufw allow 9001
+# ufw allow 22
+# ufw --force enable
+
 /etc/init.d/ntp stop || true
 
 echo "Etc/UTC" > /etc/timezone
@@ -33,7 +44,10 @@ APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
 
-apt-get install -y deb.torproject.org-keyring tor tor-arm
+apt-get install -y deb.torproject.org-keyring tor tor-geoipdb
+# tor-arm package deps broken on precise last time I checked
+# apt-get install -y tor-arm
+service tor stop
 
 cat > /etc/tor/torrc <<EOF
 ORPort 9001
@@ -57,7 +71,8 @@ AccountingStart month 1 01:00
 ExitPolicy reject *:* # no exits allowed
 EOF
 
-service tor restart
+service tor start
 
 # Use this for https://weather.torproject.org/subscribe/
+sleep 5
 echo "Node fingerprint: $(cat /var/lib/tor/fingerprint)"
