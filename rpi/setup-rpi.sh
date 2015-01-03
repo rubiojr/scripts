@@ -10,7 +10,8 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get install -y openssh-server vim tinc \
                    openvpn ntp unattended-upgrades \
-                   ntpdate
+                   ntpdate wicd-curses
+
 apt-get remove -y --purge libgtk*
 apt-get autoremove --purge
 apt-get clean
@@ -36,6 +37,10 @@ cat > /etc/apt/apt.conf.d/20auto-upgrades <<EOF
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
+
+service rsyslog stop
+find /var/log -type f -exec truncate -s 0 {} \;
+update-rc.d rsyslog disable
 
 echo "Done"
 echo "Make sure to change the pi user password"
