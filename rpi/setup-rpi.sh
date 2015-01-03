@@ -13,7 +13,7 @@ apt-get install -y openssh-server vim tinc \
                    ntpdate wicd-curses
 
 apt-get remove -y --purge libgtk*
-apt-get autoremove --purge
+apt-get autoremove -y --purge
 apt-get clean
 
 # CHANGEME
