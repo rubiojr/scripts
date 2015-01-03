@@ -21,9 +21,6 @@ curl https://github.com/rubiojr.keys > /home/pi/.ssh/authorized_keys
 chmod 0700 /home/pi/.ssh
 chown -R pi:pi /home/pi/.ssh
 
-# CHANGEME
-echo 'pi:$ecret00' | chpasswd
-
 sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication no/" /etc/ssh/sshd_config
 sed -i "s/.*PermitRootLogin.*/PermitRootLogin without-password/" /etc/ssh/sshd_config
 
