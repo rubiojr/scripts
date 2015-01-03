@@ -10,7 +10,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get install -y openssh-server vim tinc \
                    openvpn ntp unattended-upgrades \
-                   ntpdate wicd-curses curl
+                   ntpdate wicd-curses curl avahi-daemon
 
 apt-get remove -y --purge libgtk*
 apt-get autoremove -y --purge
