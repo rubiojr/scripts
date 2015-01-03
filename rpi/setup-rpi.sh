@@ -42,5 +42,10 @@ service rsyslog stop
 find /var/log -type f -exec truncate -s 0 {} \;
 update-rc.d rsyslog disable
 
-echo "Done"
-echo "Make sure to change the pi user password"
+echo "Done."
+echo
+echo "TODO:"
+echo "* Change the pi user password"
+echo "* Fix the hostname"
+echo "* Tinc setup"
+echo "* Wifi config?"
