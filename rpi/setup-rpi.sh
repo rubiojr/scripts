@@ -10,11 +10,16 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get install -y openssh-server vim tinc \
                    openvpn ntp unattended-upgrades \
-                   ntpdate wicd-curses
+                   ntpdate wicd-curses curl
 
 apt-get remove -y --purge libgtk*
 apt-get autoremove -y --purge
 apt-get clean
+
+mkdir -p /home/pi/.ssh
+curl https://github.com/rubiojr.keys > /home/pi/.ssh/authorized_keys
+chmod 0700 /home/pi/.ssh
+chown -R pi:pi /home/pi/.ssh
 
 # CHANGEME
 echo 'pi:$ecret00' | chpasswd
