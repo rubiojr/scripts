@@ -46,7 +46,7 @@ EOF
 
 cat > /boot/config.txt <<EOF
 #uncomment to overclock the arm. 700 MHz is the default.
-arm_freq=800
+arm_freq=900
 # NOOBS Auto-generated Settings:
 hdmi_force_hotplug=1
 config_hdmi_boost=4
@@ -59,6 +59,11 @@ core_freq=250
 sdram_freq=450
 over_voltage=2
 gpu_mem=16
+EOF
+
+cat > /etc/modprobe.d/8192cu.conf <<EOF
+# Disable power saving
+options 8192cu rtw_power_mgnt=0 rtw_enusbss=1 rtw_ips_mode=1
 EOF
 
 service rsyslog stop
