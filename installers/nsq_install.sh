@@ -23,8 +23,8 @@ bootstrap(){
   mv nsq-*/bin/* /usr/local/bin/
   rm -rf nsq* $TARGET
   mkdir -p /srv/nsq
-  chown -R nsq /srv/nsq
   adduser --quiet --system --home /srv/nsq nsq 
+  chown -R nsq /srv/nsq
 }
 
 upstart_service(){
