@@ -64,8 +64,13 @@ script
   NSQD_HTTP_ADDRESS=\${NSQD_HTTP_ADDRESS:-127.0.0.1:4151}
   NSQ_LOOKUPD_ADDRESS=\${NSQ_LOOKUPD_ADDRESS:-127.0.0.1:4160}
 
+  LHOSTS=''
+  for addr in \$(echo \$NSQ_LOOKUPD_ADDRESS | sed -n 1'p' | tr ',' '\n'); do
+    LHOSTS="-lookupd-tcp-address=\$addr \$LHOSTS"
+  done
+
   exec /usr/local/bin/nsqd \
-    -lookupd-tcp-address=\$NSQ_LOOKUPD_ADDRESS \
+    \$LHOSTS \
     -http-address=\$NSQD_HTTP_ADDRESS \
     -tcp-address=\$NSQD_TCP_ADDRESS \
     -data-path=/srv/nsq
