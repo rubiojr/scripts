@@ -27,7 +27,7 @@ deb http://security.ubuntu.com/ubuntu precise-security main universe multiverse
 EOF
 
 apt-get update
-apt-get install -y unattended-upgrades ntp
+apt-get install -y unattended-upgrades ntp ntpdate
 
 # Optional firewall setup, doesn't work in some VPS servers
 # apt-get install -y ufw
@@ -42,7 +42,11 @@ dpkg-reconfigure -f noninteractive tzdata
 ntpdate pool.ntp.org
 
 service cron restart
-service rsyslog restart
+if [ -f /etc/init.d/syslog-ng ]; then
+  service syslog-ng restart
+else
+  service rsyslog restart
+fi
 service ntp start
 
 cat > /etc/apt/apt.conf.d/20auto-upgrades <<EOF
