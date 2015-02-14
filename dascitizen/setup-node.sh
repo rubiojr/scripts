@@ -86,8 +86,8 @@ ssh root@$host apt-get install -y -f tinc
 ssh root@$host rm -rf /etc/tinc/$TINC_NET
 scp -r tmp/etc/tinc/$TINC_NET root@$host:/etc/tinc/
 ssh root@$host "chown root:root -R /etc/tinc/$TINC_NET"
-ssh root@$host "service tinc start || service tinc restart"
 ssh root@$host "grep -q $TINC_NET /etc/tinc/nets.boot || echo $TINC_NET >> /etc/tinc/nets.boot"
+ssh root@$host "service tinc start || service tinc restart"
 for tm in $TINC_MASTERS; do
   scp tmp/etc/tinc/$TINC_NET/hosts/$node_name root@$tm:/etc/tinc/$TINC_NET/hosts/
 done
