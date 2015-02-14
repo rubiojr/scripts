@@ -1,0 +1,2 @@
+#!/bin/sh
+ifconfig $INTERFACE @@NODE_IP@@ netmask 255.255.0.0
