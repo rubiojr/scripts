@@ -21,9 +21,9 @@ deb     http://deb.torproject.org/torproject.org $(lsb_release -c -s) main
 EOF
 
 cat > /etc/apt/sources.list <<EOF
-deb http://archive.ubuntu.com/ubuntu precise main universe multiverse
-deb http://archive.ubuntu.com/ubuntu precise-updates main universe multiverse
-deb http://security.ubuntu.com/ubuntu precise-security main universe multiverse
+deb http://archive.ubuntu.com/ubuntu $(lsb_release -c -s) main universe multiverse
+deb http://archive.ubuntu.com/ubuntu $(lsb_release -c -s)-updates main universe multiverse
+deb http://security.ubuntu.com/ubuntu $(lsb_release -c -s)-security main universe multiverse
 EOF
 
 apt-get update
