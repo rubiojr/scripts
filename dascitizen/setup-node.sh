@@ -58,7 +58,7 @@ ssh -o ConnectTimeout=3 root@$host true || {
 }
 
 echo "Testing /dev/net/tun presence..."
-ssh -o ConnectTimeout=3 root@$host test -f /dev/net/tun || {
+ssh -o ConnectTimeout=3 root@$host test -c /dev/net/tun || {
   echo "/dev/net/tun char device not detected (container?). Aborting."
   exit 1
 }
@@ -85,7 +85,8 @@ wait
 ssh root@$host apt-get install -y -f tinc
 ssh root@$host rm -rf /etc/tinc/$TINC_NET
 scp -r tmp/etc/tinc/$TINC_NET root@$host:/etc/tinc/
-ssh root@$host "chown root:root -R /etc/tinc/$TINC_NET && service tinc start"
+ssh root@$host "chown root:root -R /etc/tinc/$TINC_NET"
+ssh root@$host "service tinc start || service tinc restart"
 ssh root@$host "grep -q $TINC_NET /etc/tinc/nets.boot || echo $TINC_NET >> /etc/tinc/nets.boot"
 for tm in $TINC_MASTERS; do
   scp tmp/etc/tinc/$TINC_NET/hosts/$node_name root@$tm:/etc/tinc/$TINC_NET/hosts/
