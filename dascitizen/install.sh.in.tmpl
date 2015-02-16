@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+  
+if [ `whoami` != "root" ]; then
+  echo "Need root access, elevating privileges..."
+  exec sudo $0 $@
+fi
+
+BASE_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DATA_DIR=$(mktemp -d)
+VERSION="0.1"
+
+if [ "$1" == '--version' ]; then
+  echo $VERSION
+  exit 0
+fi
+
+cd $DATA_DIR
+echo -n "Extracting archive... "
+match=$(grep --text --line-number '^PAYLOAD:$' $BASE_PATH/$0 | cut -d ':' -f 1)
+payload_start=$((match + 1))
+tail -n +$payload_start $BASE_PATH/$0 | tar -xzf -
+
+if [ $? == 0 ]; then
+  echo "Done."
+else
+  echo "Failed!"
+fi
+
+echo Installer extracted to $DATA_DIR
+
+if [ "$1" == '--extract' ]; then
+  exit 0
+fi
+
+# Do remainder of install steps.
