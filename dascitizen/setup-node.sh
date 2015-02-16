@@ -39,12 +39,6 @@ if [ -z "$node_ip" ]; then
   exit 1
 fi
 
-echo Testing host reachability...
-ping -W1 -c3 $host >/dev/null 2>&1 || {
-  echo "Host $host did not reply to ping. Aborting."
-  exit 1
-}
-
 echo Testing duplicated IPs...
 ping -W1 -c3 $node_ip >/dev/null 2>&1 && {
   echo "A host already responds to the IP $node_ip. Aborting"

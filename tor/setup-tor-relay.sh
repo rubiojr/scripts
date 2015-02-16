@@ -54,9 +54,7 @@ APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
 
-apt-get install -y deb.torproject.org-keyring tor tor-geoipdb
-# tor-arm package deps broken on precise last time I checked
-# apt-get install -y tor-arm
+apt-get install -y deb.torproject.org-keyring tor tor-geoipdb tor-arm
 service tor stop
 
 cat > /etc/tor/torrc <<EOF
