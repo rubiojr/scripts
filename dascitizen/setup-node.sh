@@ -76,7 +76,9 @@ cat tmp/etc/tinc/$TINC_NET/hosts/$node_name >> tmp/etc/tinc/$TINC_NET/hosts/$nod
 mv tmp/etc/tinc/$TINC_NET/hosts/$node_name.new tmp/etc/tinc/$TINC_NET/hosts/$node_name
 wait
 
-ssh root@$host apt-get install -y -f tinc
+ssh root@$host 'apt-get update && apt-get install -y -f tinc augeas-tools git vim'
+ssh root@$host augtool set /files/etc/ssh/sshd_config/PasswordAuthentication no
+ssh root@$host service ssh restart
 ssh root@$host rm -rf /etc/tinc/$TINC_NET
 scp -r tmp/etc/tinc/$TINC_NET root@$host:/etc/tinc/
 ssh root@$host "chown root:root -R /etc/tinc/$TINC_NET"
