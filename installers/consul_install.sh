@@ -1,4 +1,9 @@
 #!/bin/bash
+# Firewalls, ports 8300 to 8301
+# UFW:
+# ufw allow from <range> to any port 8300
+# ufw allow from <range> to any port 8301
+# ufw allow from <range> to any port 8302
 set -e
 
 if [ `whoami` != "root" ]; then
@@ -53,6 +58,13 @@ script
   IFACE=\${CONSUL_NETIF:-\$DEFAULT_IFACE}
   BIND=\`ifconfig \$IFACE | grep "inet addr" | awk '{ print substr(\$2,6) }'\`
 
+  # Wait for the interface to come up
+  # Useful for tunnels that may take a while
+  for i in $(seq 30); then
+    ifconfig $IFACE && break
+    sleep 1
+  fi
+
   exec /usr/local/bin/consul agent \
     -config-dir="/etc/consul.d" \
     -bind=\$BIND \
@@ -75,14 +87,20 @@ start_service(){
 case "$1" in
   agent)
     bootstrap
+    echo "#CONSUL_FLAGS=-server" >> /etc/default/consul
+    echo "#CONSUL_NETIF=eth0" >> /etc/default/consul
     ;;
   server)
     bootstrap
-    echo "CONSUL_FLAGS=-server" >> /etc/default/consul
+    shift
+    if [ -n "$1" ]; then
+      extra_args="-bootstrap-expect $1"
+    fi
+    echo "CONSUL_FLAGS=-server $extra_args" >> /etc/default/consul
     echo "#CONSUL_NETIF=eth0" >> /etc/default/consul
     ;;
   *)
-    echo "Usage: $0 <role>"
+    echo "Usage: $0 <role> [args]"
     echo "Role is either agent or server"
     exit 1
     ;;
