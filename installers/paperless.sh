@@ -1,9 +1,12 @@
 #!/bin/bash
-#/ Usage: paperless.sh [volumes-dir]
+#/ Usage: paperless.sh [volumes-path]
 #/
 #/ Paperless installer using a single Docker container.
+#/ See https://github.com/danielquinn/paperless
 #/
-#/ https://github.com/danielquinn/paperless
+#/ OPTIONS
+#/ volumes-dir         Local path to the container volumes.
+#/                     Defaults to $HOME/docker/paperless.
 #/
 set -e
 
@@ -13,6 +16,7 @@ VOLUMES_PATH=${1:-$HOME/docker/paperless}
 
 # Supported OCR languages
 PAPERLESS_OCR_LANGUAGES=${PAPERLESS_OCR_LANGUAGES:-"spa eng"}
+PAPERLESS_PORT=${PAPERLESS_PORT:-8000}
 
 # Paperless encrypts using GPG.
 # This will be the password
@@ -35,7 +39,7 @@ docker run -d -e PAPERLESS_PASSPHRASE=$GPG_KEY -e "PAPERLESS_OCR_LANGUAGES=$PAPE
            -v $VOLUMES_PATH/media:/usr/src/paperless/media \
            -v $VOLUMES_PATH/consume:/consume \
            -v $VOLUMES_PATH/export:/export \
-           -p 8000:8000 pitkley/paperless runserver 0.0.0.0:8000 >/dev/null
+           -p $PAPERLESS_PORT:8000 pitkley/paperless runserver 0.0.0.0:8000 >/dev/null
 
 echo "Container post-start tasks"
 docker exec -it paperless python manage.py migrate > /dev/null
