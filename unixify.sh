@@ -16,7 +16,7 @@ if [ ! -f /var/cache/apt/pkgcache.bin ] || [ $pkg_cache_mod -gt 43200 ]; then
 fi
 
 # Sources
-if [ "$(lsb_release -s -i)" = "Debian"]; then
+if [ "$(lsb_release -s -i)" = "Debian" ]; then
   codename=$(lsb_release -c -s)
   cat > /etc/apt/sources.list << EOF
 deb http://http.debian.net/debian jessie main contrib non-free
