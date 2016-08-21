@@ -1,5 +1,11 @@
 #!/bin/bash
 # Safe to run many times
+#
+# TODO
+# adduser --disabled-login --disabled-password  --gecos '' <username>
+# su -c "mkdir /home/<username>/.ssh && chmod 700 ~/.ssh" <username>
+# su -c "curl -L https://github.com/rubiojr.keys > /home/<username>/.ssh/authorized_keys" <username>
+#
 set -e
 
 if [ `whoami` != 'root' ]; then
@@ -9,13 +15,8 @@ fi
 
 export DEBIAN_FRONTEND=noninteractive
 
-# apt-get update only if the cache is not fresh enough
-pkg_cache_mod=$(($(date +%s) - $(stat --printf="%Y" /var/cache/apt/pkgcache.bin)))
-if [ ! -f /var/cache/apt/pkgcache.bin ] || [ $pkg_cache_mod -gt 43200 ]; then
-  apt-get update
-fi
-
-# Sources
+# Update sources
+old_sources=$(md5sum /etc/apt/sources.list | cut -f1 -d ' ' 2>/dev/null)
 if [ "$(lsb_release -s -i)" = "Debian" ]; then
   codename=$(lsb_release -c -s)
   cat > /etc/apt/sources.list << EOF
@@ -26,9 +27,15 @@ deb http://security.debian.org/ jessie/updates main contrib non-free
 EOF
 fi
 
+# apt-get update only if the cache is not fresh enough
+pkg_cache_mod=$(($(date +%s) - $(stat --printf="%Y" /var/cache/apt/pkgcache.bin)))
+if [ ! -f /var/cache/apt/pkgcache.bin ] || [ $pkg_cache_mod -gt 43200 ] || [ "$old_sources" != "$(md5sum /etc/apt/sources.list | cut -f1 -d ' ' 2>/dev/null)"]; then
+  apt-get update
+fi
+
 # apt-get install -y sysdig sysdig-dkms debootstrap devscripts iperf
 
-apt-get install -y git rsync vim htop nmap telnet sysstat iotop nicstat mtr-tiny curl wget tinc openvpn dnsutils unattended-upgrades
+apt-get install -y git rsync vim htop nmap telnet sysstat iotop nicstat mtr-tiny curl wget tinc openvpn dnsutils unattended-upgrades ssh-import-id
 
 # Enable unnatended upgrades
 dpkg-reconfigure -plow unattended-upgrades
