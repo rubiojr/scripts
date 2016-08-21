@@ -29,7 +29,7 @@ fi
 
 # apt-get update only if the cache is not fresh enough
 pkg_cache_mod=$(($(date +%s) - $(stat --printf="%Y" /var/cache/apt/pkgcache.bin)))
-if [ ! -f /var/cache/apt/pkgcache.bin ] || [ $pkg_cache_mod -gt 43200 ] || [ "$old_sources" != "$(md5sum /etc/apt/sources.list | cut -f1 -d ' ' 2>/dev/null)"]; then
+if [ ! -f /var/cache/apt/pkgcache.bin ] || [ $pkg_cache_mod -gt 43200 ] || [ "$old_sources" != "$(md5sum /etc/apt/sources.list | cut -f1 -d ' ' 2>/dev/null)" ]; then
   apt-get update
 fi
 
