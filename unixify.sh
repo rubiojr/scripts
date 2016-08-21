@@ -30,15 +30,23 @@ fi
 # apt-get update only if the cache is not fresh enough
 pkg_cache_mod=$(($(date +%s) - $(stat --printf="%Y" /var/cache/apt/pkgcache.bin)))
 if [ ! -f /var/cache/apt/pkgcache.bin ] || [ $pkg_cache_mod -gt 43200 ] || [ "$old_sources" != "$(md5sum /etc/apt/sources.list | cut -f1 -d ' ' 2>/dev/null)" ]; then
-  apt-get update
+  apt-get -qq update
 fi
 
 # apt-get install -y sysdig sysdig-dkms debootstrap devscripts iperf
 
-apt-get install -y git rsync vim htop nmap telnet sysstat iotop nicstat mtr-tiny curl wget tinc openvpn dnsutils unattended-upgrades ssh-import-id
+apt-get install -qq -y git rsync vim htop nmap telnet sysstat iotop nicstat mtr-tiny curl wget tinc openvpn dnsutils unattended-upgrades ssh-import-id
 
 # Enable unnatended upgrades
-dpkg-reconfigure -plow unattended-upgrades
+cat > /etc/apt/apt.conf.d/02periodic << EOF
+// Control parameters for cron jobs by /etc/cron.daily/apt //
+APT::Periodic::Enable "1";
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Verbose "0";
+EOF
 
 # Causes trouble frequently
 sed -i 's/\(^AcceptEnv LANG LC_\*\)/#\1/' /etc/ssh/sshd_config
@@ -51,6 +59,6 @@ service ssh restart
 # curl "http://tinc-vpn.org/git/browse?p=tinc;a=blob_plain;f=systemd/tinc@.service;hb=refs/heads/1.1" -o /etc/systemd/system/tinc@.service
 
 if [ ! -f /usr/local/bin/speedtest ]; then
-  curl https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest_cli.py > /usr/local/bin/speedtest
+  curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest_cli.py > /usr/local/bin/speedtest
 fi
 chmod +x /usr/local/bin/speedtest
