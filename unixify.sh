@@ -8,12 +8,21 @@
 #
 set -e
 
+cleanup(){
+  rm -rf $workdir
+}
+
 if [ `whoami` != 'root' ]; then
   echo "Run as root." >&2
   exit 1
 fi
 
+
 export DEBIAN_FRONTEND=noninteractive
+workdir=(mktemp -d)
+cd $workdir
+
+trap cleanup EXIT
 
 # Update sources
 old_sources=$(md5sum /etc/apt/sources.list | cut -f1 -d ' ' 2>/dev/null)
@@ -35,7 +44,10 @@ fi
 
 # apt-get install -y sysdig sysdig-dkms debootstrap devscripts iperf
 
-apt-get install -qq -y git rsync vim htop nmap telnet sysstat iotop nicstat mtr-tiny curl wget tinc openvpn dnsutils unattended-upgrades ssh-import-id
+apt-get install -qq -y git rsync vim htop nmap telnet sysstat iotop nicstat mtr-tiny curl wget tinc openvpn dnsutils unattended-upgrades ssh-import-id sudo dnsmasq
+
+# Vim is now the default editor
+update-alternatives --set editor /usr/bin/vim.basic
 
 # Enable unnatended upgrades
 cat > /etc/apt/apt.conf.d/02periodic << EOF
