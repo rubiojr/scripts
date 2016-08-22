@@ -19,7 +19,7 @@ fi
 
 
 export DEBIAN_FRONTEND=noninteractive
-workdir=(mktemp -d)
+workdir=$(mktemp -d)
 cd $workdir
 
 trap cleanup EXIT
