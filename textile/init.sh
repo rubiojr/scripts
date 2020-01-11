@@ -11,9 +11,11 @@ tar -xzvf ../go-textile_v0.7.7_linux-amd64.tar.gz
 ./install
 
 tar -xzvf ../go-ipfs_v0.4.22_linux-amd64.tar.gz
-./go-ipfs/install.sh
+cd go-ipfs
+./install.sh
 
 rm -rf /home/rubiojr/tmp/*
 
+cd
 su -l -c "textile daemon" rubiojr
 #tail -f /dev/null
