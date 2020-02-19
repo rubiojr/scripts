@@ -6,6 +6,10 @@ ZSH_THEME="blinks"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 export PATH=$PATH:/usr/local/go/bin
 
+sudo_ok() {
+  sudo -n /bin/true
+}
+
 # Download and install the latest Go version
 install_go() {
   if [ ! -d /usr/local/go ] && sudo -n /bin/true; then
@@ -22,6 +26,21 @@ install_go() {
   fi
 }
 
+install_docker() {
+  sudo_ok || return
+
+  [ -f /usr/bin/docker ] && return
+
+  echo "Installing Docker..."
+  curl -sSL https://get.docker.com | sh
+  sudo usermod -aG docker pi
+}
+
 install_go || {
   echo "Installing Go failed!" >&2
 }
+
+install_docker || {
+  echo "Installing Docker failed!" >&2
+}
+
