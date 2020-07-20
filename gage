@@ -12,12 +12,14 @@ if [ -z "$gh_user" ]; then
   exit 1
 fi
 
-KEY=$(curl -s https://github.com/$gh_user.keys)
-if [ -z "$KEY" ] || expr "$KEY" : "Not.Found" >/dev/null; then
+key=$(curl -s https://github.com/$gh_user.keys|tail -n1)
+if [ -z "$key" ] || expr "$key" : "Not.Found" >/dev/null; then
   echo "Use key for $gh_user not found." >&2
   exit 1
 fi
+keyid=$(echo $key | grep -o '......$')
 
 # Encrypt and send the ciphertext.age to @ptoomey3
-age -o "$file.age" -r "$KEY" "$file"
-echo "$file.age encrypted."
+echo "** Encrypting for $gh_user with key '$keyid'..."
+age -o "$file.age" -r "$key" "$file"
+echo "** File encrypted: $file.age"
