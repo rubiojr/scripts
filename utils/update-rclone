@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+dest=~/Sync/Bin/linux-amd64
+
+v=$(curl -s https://github.com/rclone/rclone/releases/latest | grep -o -E "v([0-9]|\.)*")
+if [ -z "$v" ] || expr "$v" : "^v\d"; then
+  echo "Invalid version." >&2
+  exit 1
+fi
+
+d=$(mktemp -d /tmp/rcloneXXXX)
+echo "** Downloading $v..."
+curl -L -s https://github.com/rclone/rclone/releases/download/"$v"/rclone-"$v"-linux-amd64.zip > $d/rclone.zip
+cd $d && unzip -q rclone.zip
+mv rclone-$v-linux-amd64/rclone "$dest"
+echo "** Updated!"
