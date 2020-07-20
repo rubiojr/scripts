@@ -5,21 +5,24 @@
 #
 # Usage: gage <github-user> <file>
 #
-gh_user="$1"
+set -e
+
+users="$1"
 file="$2"
-if [ -z "$gh_user" ]; then
+if [ -z "$users" ]; then
   echo "Usage: gage <github-user> <file>" >&2
   exit 1
 fi
 
-key=$(curl -s https://github.com/$gh_user.keys|tail -n1)
-if [ -z "$key" ] || expr "$key" : "Not.Found" >/dev/null; then
-  echo "Use key for $gh_user not found." >&2
-  exit 1
-fi
-keyid=$(echo $key | grep -o '......$')
-
-# Encrypt and send the ciphertext.age to @ptoomey3
-echo "** Encrypting for $gh_user with key '$keyid'..."
-age -o "$file.age" -r "$key" "$file"
+recipients=""
+for user in $(echo $users | sed "s/,/ /g"); do
+  key=$(curl -s https://github.com/$user.keys | tail -n1)
+  if [ -z "$key" ] || expr "$key" : "Not.Found" >/dev/null; then
+    echo "Use key for $user not found." >&2
+    exit 1
+  fi
+  recipients="$recipients -r '$key'"
+done
+echo "** Encrypting for users $users..."
+echo age "$recipients" -o "$file.age" "$file" | sh
 echo "** File encrypted: $file.age"
