@@ -2,6 +2,10 @@
 set -e
 
 dest=~/Sync/Bin/linux-amd64
+if [ ! -d "$dest" ]; then
+  echo "** Destination directory does not exist. Downloading to $PWD."
+  dest=$PWD
+fi
 
 v=$(curl -s https://github.com/rclone/rclone/releases/latest | grep -o -E "v([0-9]|\.)*")
 if [ -z "$v" ] || expr "$v" : "^v\d" >/dev/null; then
@@ -9,9 +13,15 @@ if [ -z "$v" ] || expr "$v" : "^v\d" >/dev/null; then
   exit 1
 fi
 
-d=$(mktemp -d /tmp/rcloneXXXX)
+tmpdir="$TMPDIR"
+if [ ! -d $tmpdir ]; then
+  tmpdir=/tmp
+fi
+
+d=$(mktemp -d $tmpdir/rcloneXXXX)
 echo "** Downloading rclone $v..."
 curl -L -s https://github.com/rclone/rclone/releases/download/"$v"/rclone-"$v"-linux-amd64.zip > $d/rclone.zip
 cd $d && unzip -q rclone.zip
 mv rclone-$v-linux-amd64/rclone "$dest"
+rm -rf "$tmpdir"
 echo "** Updated!"
