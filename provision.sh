@@ -7,7 +7,8 @@ apt-get update -q
 apt-get -y -q full-upgrade
 apt install -y vim secure-delete htop \
 	       nmap iotop sysstat tcpdump \
-	       traceroute curl hdparm rsync
+	       traceroute curl hdparm rsync \
+	       screen tmux
 
 curl -s https://github.com/rubiojr.keys > /root/.ssh/authorized_keys
 
