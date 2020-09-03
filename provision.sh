@@ -5,7 +5,9 @@ export DEBIAN_FRONTEND=noninteractive
 # Update apt catalog and upgrade installed packages
 apt-get update -q
 apt-get -y -q full-upgrade
-apt install -y vim secure-delete htop nmap iotop sysstat tcpdump traceroute curl
+apt install -y vim secure-delete htop \
+	       nmap iotop sysstat tcpdump \
+	       traceroute curl hdparm rsync
 
 curl -s https://github.com/rubiojr.keys > /root/.ssh/authorized_keys
 
