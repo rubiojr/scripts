@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+dest=~/Sync/Bin/linux-amd64
+if [ ! -d "$dest" ]; then
+  echo "** Destination directory does not exist. Downloading to $PWD."
+  dest=$PWD
+fi
+
+v=$(curl -s https://github.com/schollz/croc/releases/latest | grep -o -E "v([0-9]|\.)*")
+if [ -z "$v" ] || expr "$v" : "^v\d" >/dev/null; then
+  echo "Invalid version." >&2
+  exit 1
+fi
+
+tmpdir="$TMPDIR"
+if [ ! -d "$tmpdir" ]; then
+  tmpdir=/tmp
+fi
+
+d=$(mktemp -d $tmpdir/crocXXXX)
+echo "** Downloading croc $v..."
+realver=${v:1}
+curl -L -s https://github.com/schollz/croc/releases/download/"$v"/croc_"$realver"_Linux-64bit.tar.gz > $d/croc.tgz
+cd $d && tar xzf croc.tgz
+mv croc "$dest"
+rm -rf "$d"
+echo "** Updated!"
