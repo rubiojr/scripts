@@ -7,11 +7,20 @@ if [ -z "$version" ]; then
   exit 1
 fi
 
-if ! curl -q -f -I -L https://golang.org/dl/go$version.linux-amd64.tar.gz >/dev/null 2>&1; then
+arch=$(uname -m)
+if [ $arch = x86_64 ]; then
+  arch=amd64
+fi
+
+if [ $arch = armv7l ]; then
+  arch=armv6l
+fi
+
+if ! curl -q -f -I -L https://golang.org/dl/go$version.linux-$arch.tar.gz >/dev/null 2>&1; then
   echo "Error downloading Go version $version" >&1
   exit 1
 fi
 
 sudo rm -rf /usr/local/go
 echo "Donwloading go version $version..."
-curl -s --output - -L https://golang.org/dl/go$version.linux-amd64.tar.gz | sudo tar -C /usr/local -xzvf - >/dev/null
+curl -s --output - -L https://golang.org/dl/go$version.linux-$arch.tar.gz | sudo tar -C /usr/local -xzvf - >/dev/null
