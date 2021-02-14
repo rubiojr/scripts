@@ -16,6 +16,10 @@ if [ $arch = armv7l ]; then
   arch=armv6l
 fi
 
+if [ $arch = aarch64 ]; then
+  arch=arm64
+fi
+
 if ! curl -q -f -I -L https://golang.org/dl/go$version.linux-$arch.tar.gz >/dev/null 2>&1; then
   echo "Error downloading Go version $version" >&1
   exit 1
