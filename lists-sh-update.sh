@@ -5,6 +5,12 @@
 #
 # Setup a lists.sh account first (See https://lists.sh)
 #
+# Usage:
+#
+#   * Setup a lists.sh account first (See https://lists.sh)
+#   * Update the LISTS_PATH variable if you don't want your lists to live in ~/Lists
+#   * Run this script
+#
 set -e
 
 ### CONFIGURATION ###
