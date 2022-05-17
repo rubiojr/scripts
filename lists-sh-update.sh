@@ -16,6 +16,7 @@ set -e
 ### CONFIGURATION ###
 
 LISTS_PATH="$HOME/Lists"  # Directory holding .txt files
+NOTIFY_SEND=1 # Comment out this variable if you don't want notifications
 
 #####################
 
@@ -36,7 +37,7 @@ WantedBy=default.target
 EOF
 
 cat > "$SDPATH/lists-sh.service" <<EOF
-[UNIT]
+[Unit]
 Description=Update lists.sh
 
 [Service]  
@@ -47,6 +48,9 @@ EOF
 cat > "$SDPATH/lists-sh.script" <<EOF
 #!/bin/sh
 scp ~/Lists/*txt lists.sh:
+if [ -n "$NOTIFY_SEND" ]; then
+  notify-send "lists.sh content updated!"
+fi
 EOF
 chmod +x "$SDPATH/lists-sh.script"
 
