@@ -47,7 +47,12 @@ EOF
 
 cat > "$SDPATH/lists-sh.script" <<EOF
 #!/bin/sh
-scp ~/Lists/*txt lists.sh:
+set -e
+
+scp ~/Lists/*txt lists.sh: || {
+ notify-send "lists.sh update FAILED"
+}
+
 if [ -n "$NOTIFY_SEND" ]; then
   notify-send "lists.sh content updated!"
 fi
