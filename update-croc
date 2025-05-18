@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-dest=~/Sync/Bin/linux-amd64
+dest=~/linuSync/Bin/linux-amd64
 if [ ! -d "$dest" ]; then
   echo "** Destination directory does not exist. Downloading to $PWD."
   dest=$PWD

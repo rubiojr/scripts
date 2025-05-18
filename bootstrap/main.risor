@@ -1,0 +1,33 @@
+from rsx import sh
+import os
+import filepath
+
+func setup_env() {
+  sh("mkdir -p ~/.bashrc.d")
+  golang := `
+export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
+`
+  os.write_file(filepath.join(os.getenv("HOME"), ".bashrc.d", "golang"), golang)
+}
+
+PATH := "PATH=/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/go/bin"
+# Re-exec to get the new environment
+if os.getenv("BOOTSTRAP_WORKING") == "" {
+  setup_env()
+  print("Bootstrapping...")
+  cmd := exec.command([os.args()[0]])
+  cmd.env = [
+    "BOOTSTRAP_WORKING=true",
+    'HOME={os.getenv("HOME")}'
+  ]
+  cmd.run()
+}
+os.setenv("PATH", PATH)
+
+print("Setting up Go...")
+sh("curl -s -L https://go.dev/dl/go1.24.3.linux-amd64.tar.gz > go1.24.3.linux-amd64.tar.gz")
+sh("sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.24.3.linux-amd64.tar.gz")
+
+print("Setting up RSX...")
+sh("go install github.com/rubiojr/rsx@latest")
+print("log out and log in again or run 'exec bash' for the environment changes to take effect.")
