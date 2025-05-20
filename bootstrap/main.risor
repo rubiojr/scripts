@@ -1,6 +1,33 @@
+import rsx
 from rsx import sh
 import os
 import filepath
+import pkg
+
+PATH := "PATH=/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/go/bin"
+FLATPAKS := [
+  "com.github.tchx84.Flatseal",
+  "com.slack.Slack",
+  "io.github.flattool.Warehouse"
+]
+
+SYSPKGS := [
+  "ripgrep",
+  "vim",
+  "htop",
+  "@c-development",
+  "@development-tools"
+]
+
+GOTAR := "go1.24.3.linux-amd64.tar.gz"
+GOTAR_URL := 'https://go.dev/dl/{GOTAR}'
+
+func preflight() {
+  arch := strings.trim_space(sh("/usr/bin/uname -m"))
+  if arch != "x86_64" {
+    error('unsupported architecture {arch}')
+  }
+}
 
 func setup_env() {
   sh("mkdir -p ~/.bashrc.d")
@@ -10,24 +37,37 @@ export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
   os.write_file(filepath.join(os.getenv("HOME"), ".bashrc.d", "golang"), golang)
 }
 
-PATH := "PATH=/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/go/bin"
 # Re-exec to get the new environment
 if os.getenv("BOOTSTRAP_WORKING") == "" {
+  preflight()
   setup_env()
   print("Bootstrapping...")
-  cmd := exec.command([os.args()[0]])
-  cmd.env = [
-    "BOOTSTRAP_WORKING=true",
-    'HOME={os.getenv("HOME")}'
-  ]
-  cmd.run()
+  exec([os.args()[0]], {
+    env: {BOOTSTRAP_WORKING:"true", HOME: os.getenv("HOME")},
+    stdout: os.stdout,
+    stderr: os.stdout
+  })
 }
+
 os.setenv("PATH", PATH)
 
-print("Setting up Go...")
-sh("curl -s -L https://go.dev/dl/go1.24.3.linux-amd64.tar.gz > go1.24.3.linux-amd64.tar.gz")
-sh("sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.24.3.linux-amd64.tar.gz")
+rsx.log("Installing system packages")
+pkg.install(strings.join(SYSPKGS, " "))
+rsx.log("Installing flatpak packages")
+pkg.install(strings.join(FLATPAKS, " "), true)
 
-print("Setting up RSX...")
+rsx.log("Setting up Go...")
+sh('curl -s -L {GOTAR_URL} > {GOTAR}')
+sh('sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf {GOTAR}')
+
+rsx.log("Setting up RSX...")
 sh("go install github.com/rubiojr/rsx@latest")
+
+rsx.log("Create ~/git")
+if !rsx.is_dir(filepath.join(os.user_home_dir(), "git/rubiojr/scripts")) {
+ sh("mkdir -p ~/git")
+ sh("mkdir -p ~/git/rubiojr/")
+ sh("cd ~/git/rubiojr && git clone https://github.com/rubiojr/scripts")
+}
+
 print("log out and log in again or run 'exec bash' for the environment changes to take effect.")
