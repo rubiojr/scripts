@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+owner=$(echo $1|cut -d / -f4)
+repo=$(echo $1|cut -d / -f5)
+
+if [ -z "$owner" ] || [ -z "$repo" ]; then
+  echo "invalid URL"
+  exit 1
+fi
+
+echo mkdir -p "$HOME/git/$owner"
+mkdir -p "$HOME/git/$owner"
+
+git clone "$1" "$HOME/git/$owner/$repo"
