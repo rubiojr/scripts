@@ -26,5 +26,5 @@ if ! curl -q -f -I -L https://golang.org/dl/go$version.linux-$arch.tar.gz >/dev/
 fi
 
 sudo rm -rf /usr/local/go
-echo "Donwloading go version $version..."
+echo "Downloading go version $version..."
 curl -s --output - -L https://golang.org/dl/go$version.linux-$arch.tar.gz | sudo tar -C /usr/local -xzvf - >/dev/null
