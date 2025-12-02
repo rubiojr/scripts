@@ -22,10 +22,109 @@ if ! command -v iw >/dev/null 2>&1; then
 fi
 
 if [ "$EUID" -ne 0 ]; then
-  echo "Requesting superuser privileges..."
+  echo "Requesting superuser privileges..." >&2
   exec sudo "$(readlink -f "$0")" "$@"
 fi
-echo "Scanning WiFi networks...";
-response="$(curl -sS -H 'User-Agent: curl, command line client using iw scan' -H 'Content-Type: application/json' --data-raw "$(comma=''; echo "{\"wifiAccessPoints\":[$(iw "$(iw dev | grep Interface | awk '{print $2}')" scan | awk 'BEGIN{canprint=0;} /^BSS/{if(canprint==1){print(bss);} bss=$2;} /^[[:space:]]+SSID: ./{canprint=1;} /^[[:space:]]+SSID: (.*_nomap|(\\x00)+)/{canprint=0;} END{if(canprint==1){print(bss);}}' | tr -dc '0-9a-f:\n' | while read bssid; do echo "$comma"'{"macAddress":"'"$bssid"'"}'; comma=','; echo >&2 "Submitting MAC address $bssid"; done)]}")" 'https://api.beacondb.net/v1/geolocate')";
-echo "$response" | jq --color-output;
+
+# Spinner helper: show while a PID is running (on stderr)
+spin_while_running() {
+  local pid="$1"
+  local s='|/-\'
+  local i=0
+
+  # Start after message prefix
+  printf " " >&2
+
+  while kill -0 "$pid" 2>/dev/null; do
+    i=$(( (i+1) % 4 ))
+    printf "\b%c" "${s:$i:1}" >&2
+    sleep 0.1
+  done
+
+  # Clear spinner and finish line
+  printf "\b \n" >&2
+}
+
+echo -n "Scanning WiFi networks..." >&2
+
+response="$(
+  # Determine the wireless interface name
+  iface="$(iw dev | awk '/Interface/ {print $2; exit}')"
+
+  # Temporary file for iw scan output
+  scan_output_file="$(mktemp)"
+
+  # Run iw scan in the background and capture its output
+  (
+    iw "$iface" scan >"$scan_output_file"
+  ) &
+  scan_pid=$!
+
+  # Show spinner while scan is running (stderr only)
+  spin_while_running "$scan_pid"
+
+  # Ensure scan finished (propagate error if any)
+  wait "$scan_pid"
+
+  # Scan for WiFi networks and collect BSS entries we want to send
+  bss_list="$(
+    awk '
+      BEGIN {
+        canprint = 0
+      }
+      /^BSS/ {
+        # When we hit a new BSS, print the previous one if it was allowed
+        if (canprint == 1) {
+          print bss
+        }
+        bss = $2
+        canprint = 0
+      }
+      /^[[:space:]]+SSID: .*/ {
+        # SSID present => candidate for printing
+        canprint = 1
+      }
+      /^[[:space:]]+SSID: (.*_nomap|(\\x00)+)/ {
+        # Ignore _nomap and zeroed SSIDs
+        canprint = 0
+      }
+      END {
+        if (canprint == 1) {
+          print bss
+        }
+      }
+    ' "$scan_output_file"
+  )"
+
+  rm -f "$scan_output_file"
+
+  # Keep only MAC-like characters
+  bss_list="$(printf '%s\n' "$bss_list" | tr -dc '0-9a-f:\n')"
+
+  # Build JSON array of wifiAccessPoints from the BSS list safely
+  json_payload='{"wifiAccessPoints":['
+  first=1
+  while IFS= read -r bssid; do
+    [ -z "$bssid" ] && continue
+    if [ "$first" -eq 1 ]; then
+      first=0
+    else
+      json_payload+=","
+    fi
+    # bssid is hex + ':', safe to embed directly
+    json_payload+="{\"macAddress\":\"$bssid\"}"
+    echo "Submitting MAC address $bssid" >&2
+  done <<< "$bss_list"
+  json_payload+="]}"
+
+  # Call BeaconDB geolocation API, write ONLY the HTTP response to stdout
+  curl -sS \
+    -H 'User-Agent: curl, command line client using iw scan' \
+    -H 'Content-Type: application/json' \
+    --data-raw "$json_payload" \
+    'https://api.beacondb.net/v1/geolocate'
+)"
+
+echo "$response" | jq --color-output
+echo
 echo "$response" | jq -r '"View resulting location (if any): https://www.openstreetmap.org/?mlat=\(.location.lat)&mlon=\(.location.lng)"'
