@@ -1,0 +1,31 @@
+#!/bin/bash
+# This script scans for nearby WiFi access points using 'iw',
+# sends their MAC addresses to the BeaconDB geolocation API via 'curl',
+# and prints the resolved geographic location (if any) using 'jq'.
+#
+# Adapted from from https://codeberg.org/beacondb/beacondb/issues/108
+set -e
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "Error: 'curl' command not found. Please install curl to continue." >&2
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: 'jq' command not found. Please install jq to continue." >&2
+  exit 1
+fi
+
+if ! command -v iw >/dev/null 2>&1; then
+  echo "Error: 'iw' command not found. Please install iw to continue." >&2
+  exit 1
+fi
+
+if [ "$EUID" -ne 0 ]; then
+  echo "Requesting superuser privileges..."
+  exec sudo "$(readlink -f "$0")" "$@"
+fi
+echo "Scanning WiFi networks...";
+response="$(curl -sS -H 'User-Agent: curl, command line client using iw scan' -H 'Content-Type: application/json' --data-raw "$(comma=''; echo "{\"wifiAccessPoints\":[$(iw "$(iw dev | grep Interface | awk '{print $2}')" scan | awk 'BEGIN{canprint=0;} /^BSS/{if(canprint==1){print(bss);} bss=$2;} /^[[:space:]]+SSID: ./{canprint=1;} /^[[:space:]]+SSID: (.*_nomap|(\\x00)+)/{canprint=0;} END{if(canprint==1){print(bss);}}' | tr -dc '0-9a-f:\n' | while read bssid; do echo "$comma"'{"macAddress":"'"$bssid"'"}'; comma=','; echo >&2 "Submitting MAC address $bssid"; done)]}")" 'https://api.beacondb.net/v1/geolocate')";
+echo "$response" | jq --color-output;
+echo "$response" | jq -r '"View resulting location (if any): https://www.openstreetmap.org/?mlat=\(.location.lat)&mlon=\(.location.lng)"'
