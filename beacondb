@@ -125,6 +125,9 @@ response="$(
     'https://api.beacondb.net/v1/geolocate'
 )"
 
-echo "$response" | jq --color-output
+echo
+echo "$response" | jq -r '
+  "Location: \(.location.lat), \(.location.lng)\nAccuracy: \(.accuracy) m"
+'
 echo
 echo "$response" | jq -r '"View resulting location (if any): https://www.openstreetmap.org/?mlat=\(.location.lat)&mlon=\(.location.lng)"'
