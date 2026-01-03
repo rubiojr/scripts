@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+dest=~/.local/bin
+if [ ! -d "$dest" ]; then
+  echo "** Destination directory does not exist. Downloading to $PWD."
+  dest=$PWD
+fi
+
+v=$(curl -v -X HEAD -L -s https://github.com/cli/cli/releases/latest 2>&1 | grep location: | grep -o -E "v([0-9]|\.)*")
+if [ -z "$v" ] || expr "$v" : "^v\d" >/dev/null; then
+  echo "Invalid version." >&2
+  exit 1
+fi
+
+tmpdir="$TMPDIR"
+if [ ! -d "$tmpdir" ]; then
+  tmpdir=/tmp
+fi
+
+d=$(mktemp -d $tmpdir/ghXXX)
+echo "** Downloading gh$v..."
+realver=${v:1}
+curl -L -s https://github.com/cli/cli/releases/download/"$v"/gh_"$realver"_linux_amd64.tar.gz > $d/cli.tgz
+cd $d && tar xzf cli.tgz
+mv "gh_${realver}_linux_amd64/bin/gh" "$dest"
+rm -rf "$d"
+echo "** Updated!"
