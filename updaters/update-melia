@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# update-melia: download the latest melia flatpak from GitHub releases and
+# install (or replace) it for the current user. No-ops if already up to date.
+set -euo pipefail
+
+REPO="buxjr311/melia-app"
+APP_ID="com.buxjr.melia"
+BRANCH="master"
+API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+
+command -v flatpak >/dev/null 2>&1 || { echo "flatpak not found" >&2; exit 1; }
+command -v jq    >/dev/null 2>&1 || { echo "jq not found"    >&2; exit 1; }
+
+installed_version="$(flatpak list --user --columns=application,branch,version 2>/dev/null \
+  | awk -F'\t' -v id="$APP_ID" -v br="$BRANCH" '$1==id && $2==br {print $3}')"
+
+echo "Querying latest release from ${REPO}..."
+release_json="$(curl -fsSL "$API_URL")"
+
+tag="$(printf '%s' "$release_json" | jq -r '.tag_name')"
+latest_version="${tag#v}"
+
+flatpak_url="$(printf '%s' "$release_json" \
+  | jq -r '.assets[] | select(.name | endswith("_x64.flatpak")) | .browser_download_url')"
+sums_url="$(printf '%s' "$release_json" \
+  | jq -r '.assets[] | select(.name == "SHA256SUMS") | .browser_download_url')"
+
+[ -n "$flatpak_url" ] || { echo "no *_x64.flatpak asset in latest release" >&2; exit 1; }
+
+if [ -n "$installed_version" ]; then
+  echo "Installed:  ${installed_version} (${APP_ID}/${BRANCH})"
+else
+  echo "Installed:  none"
+fi
+echo "Latest:      ${latest_version}"
+
+if [ "$installed_version" = "$latest_version" ]; then
+  echo "Already up to date."
+  exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+flatpak_file="${tmp}/$(basename "$flatpak_url")"
+
+echo "Downloading $(basename "$flatpak_url")..."
+curl -fSL --progress-bar -o "$flatpak_file" "$flatpak_url"
+
+if [ -n "$sums_url" ]; then
+  echo "Downloading SHA256SUMS..."
+  curl -fsSL -o "${tmp}/SHA256SUMS" "$sums_url"
+
+  # GitHub's SHA256SUMS uses paths like "flatpak/melia_1.1.243_x64.flatpak";
+  # rewrite them so sha256sum -c checks the file we just downloaded.
+  expected="$(grep -E "[[:space:]]+flatpak/.*_x64\.flatpak$" "${tmp}/SHA256SUMS" \
+    | awk '{print $1}')"
+  if [ -n "$expected" ]; then
+    actual="$(sha256sum "$flatpak_file" | awk '{print $1}')"
+    if [ "$expected" != "$actual" ]; then
+      echo "sha256 mismatch:" >&2
+      echo "  expected: $expected" >&2
+      echo "  actual:   $actual"   >&2
+      exit 1
+    fi
+    echo "sha256 OK ($actual)"
+  else
+    echo "no flatpak entry in SHA256SUMS; skipping verification"
+  fi
+else
+  echo "no SHA256SUMS asset; skipping verification"
+fi
+
+echo "Installing via flatpak --user..."
+flatpak --user install --assumeyes --or-update "$flatpak_file"
+
+echo "Done: ${APP_ID}/${BRANCH} updated to ${latest_version}."

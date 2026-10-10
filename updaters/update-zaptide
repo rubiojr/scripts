@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# update-zaptide: download the latest ZapTide flatpak from GitHub releases and
+# install (or replace) it for the current user. No-ops if already up to date.
+set -euo pipefail
+
+REPO="luminusOS/zaptide"
+APP_ID="dev.luminusos.ZapTide"
+BRANCH="master"
+API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+
+command -v flatpak >/dev/null 2>&1 || { echo "flatpak not found" >&2; exit 1; }
+command -v jq    >/dev/null 2>&1 || { echo "jq not found"    >&2; exit 1; }
+
+# Release assets are named zaptide-vX.Y.Z-<arch>.flatpak (x86_64 or aarch64).
+arch="$(uname -m)"
+case "$arch" in
+  x86_64|aarch64) ;;
+  *) echo "unsupported architecture: $arch" >&2; exit 1 ;;
+esac
+
+installed_version="$(flatpak list --user --columns=application,branch,version 2>/dev/null \
+  | awk -F'\t' -v id="$APP_ID" -v br="$BRANCH" '$1==id && $2==br {print $3}')"
+
+echo "Querying latest release from ${REPO}..."
+release_json="$(curl -fsSL "$API_URL")"
+
+tag="$(printf '%s' "$release_json" | jq -r '.tag_name')"
+latest_version="${tag#v}"
+
+flatpak_url="$(printf '%s' "$release_json" \
+  | jq -r --arg suffix "-${arch}.flatpak" \
+      '.assets[] | select(.name | endswith($suffix)) | .browser_download_url')"
+sums_url="$(printf '%s' "$release_json" \
+  | jq -r '.assets[] | select(.name == "checksums.txt") | .browser_download_url')"
+
+[ -n "$flatpak_url" ] || { echo "no *-${arch}.flatpak asset in latest release" >&2; exit 1; }
+
+if [ -n "$installed_version" ]; then
+  echo "Installed:  ${installed_version} (${APP_ID}/${BRANCH})"
+else
+  echo "Installed:  none"
+fi
+echo "Latest:      ${latest_version}"
+
+if [ "$installed_version" = "$latest_version" ]; then
+  echo "Already up to date."
+  exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+flatpak_name="$(basename "$flatpak_url")"
+flatpak_file="${tmp}/${flatpak_name}"
+
+echo "Downloading ${flatpak_name}..."
+curl -fSL --progress-bar -o "$flatpak_file" "$flatpak_url"
+
+if [ -n "$sums_url" ]; then
+  echo "Downloading checksums.txt..."
+  curl -fsSL -o "${tmp}/checksums.txt" "$sums_url"
+
+  expected="$(awk -v f="$flatpak_name" '$2==f {print $1}' "${tmp}/checksums.txt")"
+  if [ -n "$expected" ]; then
+    actual="$(sha256sum "$flatpak_file" | awk '{print $1}')"
+    if [ "$expected" != "$actual" ]; then
+      echo "sha256 mismatch:" >&2
+      echo "  expected: $expected" >&2
+      echo "  actual:   $actual"   >&2
+      exit 1
+    fi
+    echo "sha256 OK ($actual)"
+  else
+    echo "no ${flatpak_name} entry in checksums.txt; skipping verification"
+  fi
+else
+  echo "no checksums.txt asset; skipping verification"
+fi
+
+echo "Installing via flatpak --user..."
+flatpak --user install --assumeyes --or-update "$flatpak_file"
+
+echo "Done: ${APP_ID}/${BRANCH} updated to ${latest_version}."
